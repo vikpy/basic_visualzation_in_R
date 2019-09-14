@@ -1,0 +1,97 @@
+---
+title: "Employee Data"
+output: html_notebook
+
+---
+
+## Introduction
+This document provides an analysis of the given employee data and checks. Glimpse of the data is as follows.
+
+```{r}
+#Setting Up the Data
+library(readxl)
+library(tidyverse)
+library(knitr)
+library(ggplot2)
+setwd('C:/Users/Vikraant Pai/workspace/basic_visualzation_in_R/')
+
+#Checking the values in the data set and understanding the data
+df <- read_excel("./data.xls")
+head(df,10)
+
+```
+Then we clean the data as per the instructions given in the data 
+```{r}
+
+#Cleaning and conforming the data 
+df <-  df %>%
+  mutate(Gender = case_when(gender == 'm' ~ 'Male',
+                            gender == 'f' ~ 'Female'))  %>%
+  mutate(Jobtype = case_when(
+    jobcat == 1 ~ 'Clerical',
+    jobcat == 2 ~ 'Custodial',
+    jobcat == 3 ~ 'Manager'
+  )) %>%   mutate(Minority = case_when(
+    minority == 1 ~ 'Yes',
+    minority == 0 ~ 'No'
+  )) %>% mutate(increase_in_sal = salary - salbegin )  #Instead of salary alone we will consider increment in the salary
+
+kable(print(head(df, 5)))
+
+```
+
+| id|gender |bdate      | educ| jobcat| salary| salbegin| jobtime| prevexp| minority|Gender |Jobtype  |Minority | increase_in_sal|
+|--:|:------|:----------|----:|------:|------:|--------:|-------:|-------:|--------:|:------|:--------|:--------|---------------:|
+|  1|m      |1952-02-03 |   15|      3|  57000|    27000|      98|     144|        0|Male   |Manager  |No       |           30000|
+|  2|m      |1958-05-23 |   16|      1|  40200|    18750|      98|      36|        0|Male   |Clerical |No       |           21450|
+|  3|f      |1929-07-26 |   12|      1|  21450|    12000|      98|     381|        0|Female |Clerical |No       |            9450|
+|  4|f      |1947-04-15 |    8|      1|  21900|    13200|      98|     190|        0|Female |Clerical |No       |            8700|
+|  5|m      |1955-02-09 |   15|      1|  45000|    21000|      98|     138|        0|Male   |Clerical |No       |           24000|
+
+### Deciding the KPI
+When we go through the data we observe that absolute salary will not give out any information about the gender bias. Hence, we check the **increase in the salary per unit job time** (  $\delta$ ) to check and identify how salaries are growing in the organization as per the employee. 
+
+   $$ increase\,in\,the\,salary\,per\,unit\,job\,time\, (\delta) =  \frac{salary - salbegin}{jobtime}$$
+   
+### Finding mean & median increase in the salary per unit job time by Job Type and deciding the gender bias
+
+```{r}
+#Calculating the average salary for male and average salary for female for particular job type
+mean_values <-  df %>%
+  group_by(Gender, Jobtype) %>%
+  summarise(average_increase_in_salary = mean(increase_in_sal)) %>%  arrange(desc(average_increase_in_salary))
+kable(mean_values)
+
+median_values <-  df %>%
+  group_by(Gender, Jobtype) %>%
+  summarise(median_increase_in_salary = median(increase_in_sal)) %>%  arrange(desc(median_increase_in_salary))
+kable(median_values)
+```
+
+Mean Increase in the Salary per unit experience by Job Type 
+
+|Gender |Jobtype   | average_increase_in_salary|
+|:------|:---------|--------------------------:|
+|Male   |Manager   |                   34615.54|
+|Female |Manager   |                   27092.50|
+|Male   |Custodial |                   15861.11|
+|Male   |Clerical  |                   15696.94|
+|Female |Clerical  |                   12252.94|
+
+
+
+Median increase in the Salary per unit time experience by Job Type 
+
+|Gender |Jobtype   | median_increase_in_salary|
+|:------|:---------|-------------------------:|
+|Male   |Manager   |                   32307.5|
+|Female |Manager   |                   26130.0|
+|Male   |Custodial |                   15750.0|
+|Male   |Clerical  |                   14100.0|
+|Female |Clerical  |                   11550.0|
+
+
+From Above table it is very evident that for a particular job type rate at which the male gets raise is *more* than the rate at which a female gets a raise for a particular job type. 
+
+### Conclusion
+From the above data we can sat that there is a gender Bias in the company for a particular job type. 
